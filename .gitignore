@@ -1,0 +1,27 @@
+# ===== Python =====
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.env.local
+
+# ===== Java =====
+target/
+*.class
+.idea/
+*.iml
+
+# ===== Node =====
+node_modules/
+dist/
+
+# ===== 运行时数据与大文件 =====
+milvus_data/
+*.db
+data/images/
+*.zip
+
+# ===== 系统 =====
+.DS_Store
+Thumbs.db

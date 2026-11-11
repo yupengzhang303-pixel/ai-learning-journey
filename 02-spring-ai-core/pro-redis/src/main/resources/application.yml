@@ -1,0 +1,17 @@
+server:
+  port: 8081    # 避免和 Spring AI 项目的 8080 冲突
+
+spring:
+  application:
+    name: pro-redis
+  data:
+    redis:
+      host: 192.168.85.132     # 你的 CentOS 虚拟机 IP
+      port: 6379
+      database: 0
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0

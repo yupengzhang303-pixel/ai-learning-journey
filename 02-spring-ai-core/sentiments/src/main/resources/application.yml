@@ -1,0 +1,19 @@
+server:
+  port: 8081 # Java 服务运行在 8080 端口
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/sentiment_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: 123456 # 换成你自己的 MySQL 密码
+
+# MyBatis-Plus 配置日志打印，方便调试
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 自定义 N8N 的 Webhook 地址
+n8n:
+  webhook:
+    url: http://localhost:5678/webhook-test/alert # N8N 测试阶段的 URL 通常带 -test

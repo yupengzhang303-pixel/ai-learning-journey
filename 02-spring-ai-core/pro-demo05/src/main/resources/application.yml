@@ -1,0 +1,22 @@
+debug: true
+
+server:
+  port: 8080
+
+spring:
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: qwen2.5:3b
+    chat:
+      memory:
+        repository:
+          redis:
+            host: 192.168.85.132
+            port: 6379
+
+  data:
+    redis:
+      host: 192.168.85.132
+      port: 6379

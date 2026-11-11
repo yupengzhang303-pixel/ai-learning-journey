@@ -1,0 +1,14 @@
+server:
+  port: 8085   # 避免和之前项目冲突（8080/8081/8082/8083 都占了）
+
+spring:
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: qwen2.5:3b
+
+# 开启 Spring AI 的 debug 日志，观察工具调用过程
+logging:
+  level:
+    org.springframework.ai: DEBUG

@@ -1,0 +1,20 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: mcp-server
+
+  ai:
+    mcp:
+      server:
+        name: my-mcp-server
+        version: 1.0.0
+        type: sync
+        sse-endpoint: /mcp
+        sse-message-endpoint: /mcp/message
+
+# ✅ 自定义鉴权 Token
+mcp:
+  auth:
+    token: my-secret-token

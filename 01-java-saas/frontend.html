@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>SaaS 知识库管理</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-size: 14px; }
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+    h1 { margin-bottom: 20px; }
+    h2 { margin: 20px 0 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+    .section { background: #fff; padding: 15px; margin-bottom: 20px; border-radius: 4px; }
+    .tenant-bar { background: #333; color: #fff; padding: 10px; margin-bottom: 20px; border-radius: 4px; }
+    .tenant-bar input { padding: 5px; width: 200px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background: #f0f0f0; }
+    button { padding: 5px 12px; cursor: pointer; margin: 2px; }
+    .btn-primary { background: #007bff; color: #fff; border: none; border-radius: 3px; }
+    .btn-danger { background: #dc3545; color: #fff; border: none; border-radius: 3px; }
+    .btn-success { background: #28a745; color: #fff; border: none; border-radius: 3px; }
+    .btn-warning { background: #ffc107; color: #000; border: none; border-radius: 3px; }
+    input, select, textarea { padding: 5px; border: 1px solid #ccc; border-radius: 3px; }
+    .form-row { margin: 8px 0; }
+    .form-row label { display: inline-block; width: 100px; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; }
+    .modal.active { display: flex; }
+    .modal-content { background: #fff; padding: 20px; border-radius: 4px; min-width: 400px; }
+    .modal-content h3 { margin-bottom: 15px; }
+    .pagination { margin-top: 10px; }
+    .pagination button { padding: 3px 8px; }
+    .info { color: #666; font-size: 12px; margin-top: 5px; }
+    .tag-badge { display: inline-block; background: #e9ecef; padding: 2px 6px; border-radius: 3px; margin: 2px; font-size: 12px; }
+    .tag-badge span { cursor: pointer; color: red; margin-left: 4px; }
+</style>
+</head>
+<body>
+
+<div class="tenant-bar">
+    <label>租户ID (X-Tenant-Id): </label>
+    <input type="number" id="tenantId" value="1" placeholder="请输入租户ID">
+    <button class="btn-primary" onclick="loadAll()">刷新</button>
+</div>
+
+<!-- 知识库管理 -->
+<div class="section">
+    <h2>知识库管理</h2>
+    <div class="form-row">
+        <input type="text" id="kbName" placeholder="知识库名称">
+        <input type="text" id="kbDesc" placeholder="描述">
+        <button class="btn-success" onclick="createKb()">新建知识库</button>
+    </div>
+    <table id="kbTable">
+        <thead><tr><th>ID</th><th>名称</th><th>描述</th><th>创建时间</th><th>文档数</th><th>操作</th></tr></thead>
+        <tbody></tbody>
+    </table>
+    <div class="pagination" id="kbPager"></div>
+</div>
+
+<!-- 文档管理 -->
+<div class="section">
+    <h2>文档管理</h2>
+    <div class="form-row">
+        <select id="docKbId"><option value="">全部知识库</option></select>
+        <input type="text" id="docTitle" placeholder="标题搜索">
+        <select id="docStatus"><option value="">全部状态</option><option value="1">正常</option><option value="0">已删除</option></select>
+        <button class="btn-primary" onclick="loadDocs(1)">搜索</button>
+    </div>
+    <div class="form-row">
+        <button class="btn-success" onclick="openCreateDoc()">新建文档</button>
+        <button class="btn-danger" onclick="batchDeleteDocs()">批量删除</button>
+    </div>
+    <table id="docTable">
+        <thead><tr><th><input type="checkbox" id="docCheckAll" onchange="toggleDocAll(this)"></th><th>ID</th><th>知识库</th><th>标题</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+        <tbody></tbody>
+    </table>
+    <div class="pagination" id="docPager"></div>
+</div>
+
+<!-- 标签管理 -->
+<div class="section">
+    <h2>标签管理</h2>
+    <div class="form-row">
+        <input type="text" id="tagName" placeholder="标签名称">
+        <button class="btn-success" onclick="createTag()">新建标签</button>
+    </div>
+    <table id="tagTable">
+        <thead><tr><th>ID</th><th>名称</th><th>创建时间</th><th>操作</th></tr></thead>
+        <tbody></tbody>
+    </table>
+    <div class="form-row" style="margin-top:15px">
+        <strong>给文档打标签：</strong>
+        <select id="tagDocId"><option value="">选择文档</option></select>
+        <select id="tagSel" multiple style="height:80px;width:200px"></select>
+        <button class="btn-primary" onclick="bindTags()">确认绑定</button>
+        <div id="docTagsDisplay" style="margin-top:8px"></div>
+    </div>
+</div>
+
+<!-- 新建/编辑文档弹窗 -->
+<div class="modal" id="docModal">
+    <div class="modal-content">
+        <h3 id="docModalTitle">新建文档</h3>
+        <input type="hidden" id="docEditId">
+        <div class="form-row"><label>知识库：</label><select id="docModalKbId"></select></div>
+        <div class="form-row"><label>标题：</label><input type="text" id="docModalTitle" style="width:250px"></div>
+        <div class="form-row"><label>内容：</label><textarea id="docModalContent" rows="6" style="width:250px"></textarea></div>
+        <div class="form-row">
+            <button class="btn-primary" onclick="saveDoc()">保存</button>
+            <button class="btn-warning" onclick="closeDocModal()">取消</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const API = 'http://localhost:8090/api/v1';
+let tenantId = () => document.getElementById('tenantId').value;
+let currentDocPage = 1;
+let currentKbPage = 1;
+let selectedDocIds = new Set();
+
+function headers() {
+    return { 'Content-Type': 'application/json', 'X-Tenant-Id': tenantId() };
+}
+
+async function get(path) {
+    const r = await fetch(API + path, { headers: headers() });
+    const j = await r.json();
+    if (j.code !== 200) throw new Error(j.message || '请求失败');
+    return j.data;
+}
+
+async function post(path, body) {
+    const r = await fetch(API + path, { method: 'POST', headers: headers(), body: JSON.stringify(body) });
+    const j = await r.json();
+    if (j.code !== 200) throw new Error(j.message || '请求失败');
+    return j.data;
+}
+
+async function put(path, body) {
+    const r = await fetch(API + path, { method: 'PUT', headers: headers(), body: JSON.stringify(body) });
+    const j = await r.json();
+    if (j.code !== 200) throw new Error(j.message || '请求失败');
+    return j.data;
+}
+
+async function del(path) {
+    const r = await fetch(API + path, { method: 'DELETE', headers: headers() });
+    const j = await r.json();
+    if (j.code !== 200) throw new Error(j.message || '请求失败');
+    return j.data;
+}
+
+async function loadAll() {
+    await Promise.all([loadKbs(1), loadDocs(1), loadTags(), loadKbSelect()]);
+}
+
+function renderKbTable(kbs) {
+    const tbody = document.querySelector('#kbTable tbody');
+    tbody.innerHTML = '';
+    if (!kbs || kbs.records.length === 0) { tbody.innerHTML = '<tr><td colspan="6">暂无数据</td></tr>'; return; }
+    kbs.records.forEach(kb => {
+        tbody.innerHTML += `<tr>
+            <td>${kb.id}</td>
+            <td>${esc(kb.name)}</td>
+            <td>${esc(kb.description || '')}</td>
+            <td>${kb.createTime || ''}</td>
+            <td><span id="kbCount${kb.id}">-</span></td>
+            <td>
+                <button class="btn-warning" onclick="moveDocUi(${kb.id})">移动文档</button>
+                <button class="btn-danger" onclick="deleteKb(${kb.id})">删除</button>
+            </td>
+        </tr>`;
+        get(`/kbs/${kb.id}/count`).then(c => { const el = document.getElementById('kbCount' + kb.id); if (el) el.textContent = c; }).catch(() => {});
+    });
+    renderKbPager(kbs);
+}
+
+function renderKbPager(kbs) {
+    const div = document.getElementById('kbPager');
+    let html = '';
+    if (kbs.current > 1) html += `<button onclick="loadKbs(${kbs.current - 1})">上一页</button>`;
+    html += ` 第 ${kbs.current} / ${kbs.pages} 页 共 ${kbs.total} 条 `;
+    if (kbs.current < kbs.pages) html += `<button onclick="loadKbs(${kbs.current + 1})">下一页</button>`;
+    div.innerHTML = html;
+}
+
+async function loadKbs(page) {
+    currentKbPage = page;
+    const name = document.getElementById('kbName').value;
+    try {
+        const data = await get(`/kbs?pageNum=${page}&pageSize=10&name=${encodeURIComponent(name)}`);
+        renderKbTable(data);
+    } catch (e) { alert('加载知识库失败: ' + e.message); }
+}
+
+async function createKb() {
+    const name = document.getElementById('kbName').value.trim();
+    const desc = document.getElementById('kbDesc').value.trim();
+    if (!name) { alert('请输入知识库名称'); return; }
+    try {
+        await post('/kbs', { name, description: desc });
+        document.getElementById('kbName').value = '';
+        document.getElementById('kbDesc').value = '';
+        loadKbs(1);
+    } catch (e) { alert('创建失败: ' + e.message); }
+}
+
+async function deleteKb(id) {
+    if (!confirm('确认删除知识库?')) return;
+    try { await del(`/kbs/${id}`); loadKbs(currentKbPage); } catch (e) { alert('删除失败: ' + e.message); }
+}
+
+async function loadKbSelect() {
+    try {
+        const data = await get('/kbs?pageNum=1&pageSize=100');
+        const opts = data.records.map(kb => `<option value="${kb.id}">${esc(kb.name)}</option>`).join('');
+        document.getElementById('docKbId').innerHTML = '<option value="">全部知识库</option>' + opts;
+        document.getElementById('docModalKbId').innerHTML = opts;
+        document.getElementById('tagDocId').innerHTML = '<option value="">选择文档</option>' + (await get('/documents?pageNum=1&pageSize=100')).records.map(d => `<option value="${d.id}">${esc(d.title)}</option>`).join('');
+    } catch (e) { console.error(e); }
+}
+
+function renderDocTable(docs) {
+    const tbody = document.querySelector('#docTable tbody');
+    tbody.innerHTML = '';
+    if (!docs || docs.records.length === 0) { tbody.innerHTML = '<tr><td colspan="7">暂无数据</td></tr>'; return; }
+    docs.records.forEach(doc => {
+        const checked = selectedDocIds.has(doc.id) ? 'checked' : '';
+        tbody.innerHTML += `<tr>
+            <td><input type="checkbox" ${checked} onchange="toggleDoc(${doc.id},this.checked)"></td>
+            <td>${doc.id}</td>
+            <td>${esc(doc.kbId || '-')}</td>
+            <td>${esc(doc.title)}</td>
+            <td>${doc.status === 1 ? '正常' : '<s>已删除</s>'}</td>
+            <td>${doc.createTime || ''}</td>
+            <td>
+                <button class="btn-primary" onclick="editDoc(${doc.id})">编辑</button>
+                <button class="btn-danger" onclick="deleteDoc(${doc.id})">删除</button>
+                <button class="btn-warning" onclick="openMoveDoc(${doc.id})">移动</button>
+            </td>
+        </tr>`;
+    });
+    renderDocPager(docs);
+}
+
+function renderDocPager(docs) {
+    const div = document.getElementById('docPager');
+    let html = '';
+    if (docs.current > 1) html += `<button onclick="loadDocs(${docs.current - 1})">上一页</button>`;
+    html += ` 第 ${docs.current} / ${docs.pages} 页 共 ${docs.total} 条 `;
+    if (docs.current < docs.pages) html += `<button onclick="loadDocs(${docs.current + 1})">下一页</button>`;
+    div.innerHTML = html;
+}
+
+async function loadDocs(page) {
+    currentDocPage = page;
+    const kbId = document.getElementById('docKbId').value;
+    const title = document.getElementById('docTitle').value.trim();
+    const status = document.getElementById('docStatus').value;
+    try {
+        const data = await get(`/documents?pageNum=${page}&pageSize=10&kbId=${kbId}&title=${encodeURIComponent(title)}&status=${status}`);
+        renderDocTable(data);
+    } catch (e) { alert('加载文档失败: ' + e.message); }
+}
+
+function toggleDoc(id, checked) {
+    if (checked) selectedDocIds.add(id);
+    else selectedDocIds.delete(id);
+}
+
+function toggleDocAll(cb) {
+    document.querySelectorAll('#docTable tbody input[type=checkbox]').forEach(el => {
+        el.checked = cb.checked;
+        if (cb.checked) selectedDocIds.add(parseInt(el.value));
+        else selectedDocIds.delete(parseInt(el.value));
+    });
+}
+
+function openCreateDoc() {
+    document.getElementById('docEditId').value = '';
+    document.getElementById('docModalTitle').textContent = '新建文档';
+    document.getElementById('docModalTitle').value = '';
+    document.getElementById('docModalContent').value = '';
+    document.getElementById('docModalKbId').value = '';
+    document.getElementById('docModal').classList.add('active');
+}
+
+async function editDoc(id) {
+    try {
+        const doc = await get(`/documents/${id}`);
+        document.getElementById('docEditId').value = id;
+        document.getElementById('docModalTitle').textContent = '编辑文档';
+        document.getElementById('docModalTitle').value = doc.title;
+        document.getElementById('docModalContent').value = doc.content || '';
+        document.getElementById('docModalKbId').value = doc.kbId || '';
+        document.getElementById('docModal').classList.add('active');
+    } catch (e) { alert('加载失败: ' + e.message); }
+}
+
+async function saveDoc() {
+    const id = document.getElementById('docEditId').value;
+    const body = {
+        title: document.getElementById('docModalTitle').value.trim(),
+        content: document.getElementById('docModalContent').value,
+        kbId: document.getElementById('docModalKbId').value || null
+    };
+    if (!body.title) { alert('标题不能为空'); return; }
+    try {
+        if (id) await put(`/documents/${id}`, body);
+        else await post('/documents', body);
+        closeDocModal();
+        loadDocs(currentDocPage);
+    } catch (e) { alert('保存失败: ' + e.message); }
+}
+
+function closeDocModal() { document.getElementById('docModal').classList.remove('active'); }
+
+async function deleteDoc(id) {
+    if (!confirm('确认删除?')) return;
+    try { await del(`/documents/${id}`); loadDocs(currentDocPage); } catch (e) { alert('删除失败: ' + e.message); }
+}
+
+async function batchDeleteDocs() {
+    if (selectedDocIds.size === 0) { alert('请先选择文档'); return; }
+    if (!confirm(`确认删除 ${selectedDocIds.size} 篇文档?`)) return;
+    try {
+        await post('/documents/batch', Array.from(selectedDocIds));
+        selectedDocIds.clear();
+        loadDocs(currentDocPage);
+    } catch (e) { alert('批量删除失败: ' + e.message); }
+}
+
+async function openMoveDoc(id) {
+    const targetKbId = prompt('请输入目标知识库ID:');
+    if (!targetKbId) return;
+    try {
+        await put(`/documents/${id}/move?targetKbId=${targetKbId}`, {});
+        loadDocs(currentDocPage);
+    } catch (e) { alert('移动失败: ' + e.message); }
+}
+
+function moveDocUi(kbId) {
+    const docId = prompt('请输入要移动的文档ID:');
+    if (!docId) return;
+    try {
+        put(`/documents/${docId}/move?targetKbId=${kbId}`, {}).then(() => { alert('移动成功'); loadDocs(currentDocPage); }).catch(e => alert('移动失败: ' + e.message));
+    } catch (e) { alert('移动失败: ' + e.message); }
+}
+
+async function loadTags() {
+    try {
+        const tags = await get('/tags');
+        const tbody = document.querySelector('#tagTable tbody');
+        if (!tags || tags.length === 0) { tbody.innerHTML = '<tr><td colspan="4">暂无数据</td></tr>'; return; }
+        tbody.innerHTML = tags.map(t => `<tr>
+            <td>${t.id}</td><td>${esc(t.name)}</td><td>${t.createTime || ''}</td>
+            <td><button class="btn-danger" onclick="deleteTag(${t.id})">删除</button></td>
+        </tr>`).join('');
+        const tagSel = document.getElementById('tagSel');
+        tagSel.innerHTML = tags.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
+    } catch (e) { console.error(e); }
+}
+
+async function createTag() {
+    const name = document.getElementById('tagName').value.trim();
+    if (!name) { alert('请输入标签名称'); return; }
+    try {
+        await post('/tags', { name });
+        document.getElementById('tagName').value = '';
+        loadTags();
+    } catch (e) { alert('创建失败: ' + e.message); }
+}
+
+async function deleteTag(id) {
+    if (!confirm('确认删除?')) return;
+    try { await del(`/tags/${id}`); loadTags(); } catch (e) { alert('删除失败: ' + e.message); }
+}
+
+async function bindTags() {
+    const docId = document.getElementById('tagDocId').value;
+    if (!docId) { alert('请先选择文档'); return; }
+    const tagIds = Array.from(document.getElementById('tagSel').selectedOptions).map(o => parseInt(o.value));
+    try {
+        await post(`/tags/documents/${docId}/tags`, tagIds);
+        alert('绑定成功');
+        loadDocTags(docId);
+    } catch (e) { alert('绑定失败: ' + e.message); }
+}
+
+async function loadDocTags(docId) {
+    if (!docId) { document.getElementById('docTagsDisplay').innerHTML = ''; return; }
+    try {
+        const docs = await get(`/tags/${docId}/documents`);
+        const div = document.getElementById('docTagsDisplay');
+        div.innerHTML = docs && docs.length > 0
+            ? docs.map(d => `<span class="tag-badge">${esc(d.title)}</span>`).join('')
+            : '<span class="info">该文档暂无标签</span>';
+    } catch (e) { div.innerHTML = '<span class="info">加载标签失败</span>'; }
+}
+
+document.getElementById('tagDocId').addEventListener('change', function() { loadDocTags(this.value); });
+
+function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// 初始化
+loadAll();
+</script>
+</body>
+</html>

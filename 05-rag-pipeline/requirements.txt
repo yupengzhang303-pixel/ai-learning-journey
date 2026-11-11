@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+requests
+langchain
+langchain-ollama
+langchain-text-splitters
+faiss-cpu
+sentence-transformers
+pypdf
+python-docx
+pandas

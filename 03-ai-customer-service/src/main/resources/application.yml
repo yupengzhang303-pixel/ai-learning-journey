@@ -1,0 +1,24 @@
+server:
+  port: 8080
+
+spring:
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: qwen2.5:3b
+  data:
+    redis:
+      host: 192.168.85.132   # 你的虚拟机 IP，老师用的是 localhost
+      port: 6379
+
+# 敏感词配置
+sensitive:
+  # 初始敏感词列表（会存入Redis Set）
+  words:
+    - "测试"
+    - "笨蛋"
+    - "垃圾"
+    - "政*"
+  # 处理策略：reject(拒绝) / replace(替换) / log(放行记录)
+  strategy: reject

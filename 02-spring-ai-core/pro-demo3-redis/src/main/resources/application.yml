@@ -1,0 +1,20 @@
+server:
+  port: 8083
+
+spring:
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: qwen2.5:3b
+  data:
+    redis:
+      host: 192.168.85.132
+      port: 6379
+      database: 0
+      timeout: 3000ms
+
+  redisson:
+        config:
+          singleServerConfig:
+            address: "redis://192.168.85.132:6379"

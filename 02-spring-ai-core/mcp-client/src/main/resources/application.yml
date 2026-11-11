@@ -1,0 +1,25 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: mcp-client
+
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        model: qwen2.5:7b
+
+    # ⚠️ 删掉整个 spring.ai.mcp.client 配置块（已被 @SpringBootApplication(exclude) 取代）
+
+# ✅ 自定义配置
+mcp:
+  server:
+    base-url: http://localhost:8088
+    sse-endpoint: /mcp
+    token: my-secret-token
+
+logging:
+  level:
+    org.springframework.ai: DEBUG

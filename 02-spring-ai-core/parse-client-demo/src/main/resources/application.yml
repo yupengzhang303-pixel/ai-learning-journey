@@ -1,0 +1,6 @@
+server:
+  port: 8080
+
+app:
+  python:
+    base-url: http://localhost:8000
